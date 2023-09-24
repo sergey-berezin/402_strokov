@@ -165,7 +165,7 @@ namespace YOLO_csharp
                             objects.Add(new ObjectBox(x - w / 2, y - h / 2, x + w / 2, y + h / 2, conf, IndexOfMax(Softmax(classes))));
 
                             csvWriter.WriteField("|");
-                            csvWriter.WriteField("?");
+                            csvWriter.WriteField(labels[IndexOfMax(Softmax(classes))]);
                             csvWriter.WriteField(x.ToString());
                             csvWriter.WriteField(y.ToString());
                             csvWriter.WriteField(w.ToString());
@@ -186,7 +186,6 @@ namespace YOLO_csharp
                                     });
                             });
                         }
-                        //boundingBoxes.Save(dir + "tmp/" + "boundingboxes"+ row.ToString()+".jpg");
                     }
                 }
             }
@@ -216,6 +215,8 @@ namespace YOLO_csharp
                             Color.Blue, 
                             new PointF((float)objbox.XMin, (float)objbox.YMax));
                     });
+                    target.SaveAsJpegAsync(dir + "tmp/" + "target"+ target.Height.ToString() + ".jpg");
+
                 }
             }
             var annotated = resized.Clone();
