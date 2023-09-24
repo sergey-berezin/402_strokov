@@ -15,18 +15,25 @@ using CsvHelper;
 using CsvHelper.Configuration;
 using System.Globalization;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace YOLO_csharp
 {
     public class ImageRecognizer
     {
-        public static void Main(string filename)
+        struct BoundingInfo
         {
-            if(!File.Exists("tinyyolov2-8.onnx"))
-            {
-                //bool Setup = await SetupONNXFileAsync();
-                SetupONNXFile();
-            }
+            string filename;
+            string name;
+            double X;
+            double Y;
+            double W;
+            double H;
+        }
+        public static int MainAsync(string filename)
+        {
+            Thread Setup= new Thread(SetupONNXFile);
+            Setup.Start();
 
             string dir = "../../../images/";
 
@@ -34,29 +41,13 @@ namespace YOLO_csharp
             {
                 throw new Exception("File doesn't exist");
             }
-
-            var csvPath = dir + "results.csv"; //Path.Combine(Environment.CurrentDirectory, $"something.csv");
-            using (var streamWriter = new StreamWriter(csvPath))
-            {
-                using (var csvWriter = new CsvWriter(streamWriter, CultureInfo.InvariantCulture))
-                {
-                    csvWriter.WriteField("filename");
-                    csvWriter.WriteField("class");
-                    csvWriter.WriteField("X");
-                    csvWriter.WriteField("Y");
-                    csvWriter.WriteField("W");
-                    csvWriter.WriteField("H");
-                }
-            }
-
-
             ////////////////////////////////////////////////////////////////////////////////////////////
 
             //using var image = Image.Load<Rgb24>(args.FirstOrDefault() ?? dir + filename + ".jpg");
             using var image = Image.Load<Rgb24>(dir + filename + ".jpg");
             
-            int imageWidth = image.Width;
-            int imageHeight = image.Height;
+            //int imageWidth = image.Width;
+            //int imageHeight = image.Height;
 
             // Размер изображения
             const int TargetSize = 416;
@@ -93,6 +84,8 @@ namespace YOLO_csharp
                NamedOnnxValue.CreateFromTensor("image", input),
             };
 
+            Setup.Join();
+
             // Вычисляем предсказание нейросетью
             using var session = new InferenceSession("tinyyolov2-8.onnx");  
             using IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results = session.Run(inputs);
@@ -100,9 +93,8 @@ namespace YOLO_csharp
             // Получаем результаты
             var outputs = results.First().AsTensor<float>();
 
-            foreach(var d in outputs.Dimensions)
-                Console.WriteLine(d);
-
+            //foreach(var d in outputs.Dimensions)
+            //    Console.WriteLine(d);
 
             const int CellCount = 13; // 13x13 ячеек
             const int BoxCount = 5; // 5 прямоугольников в каждой ячейке
@@ -115,28 +107,6 @@ namespace YOLO_csharp
                 "diningtable", "dog", "horse", "motorbike", "person",
                 "pottedplant", "sheep", "sofa", "train", "tvmonitor"
             };
-
-            float Sigmoid(float value)
-    	    {
-                var e = (float)Math.Exp(value);
-                return e / (1.0f + e);
-            } 
-
-            float[] Softmax(float[] values)
-            {
-                var exps = values.Select(v => Math.Exp(v));
-                var sum = exps.Sum();
-                return exps.Select(e => (float)(e / sum)).ToArray();
-            }
-
-            int IndexOfMax(float[] values)
-            {
-                int idx = 0;
-                for(int i = 1;i<values.Length;i++)
-                    if(values[i] > values[idx])
-                        idx = i;
-                return idx;
-            }
 
             var anchors = new (double, double)[]
             {
@@ -153,9 +123,24 @@ namespace YOLO_csharp
 
             List<ObjectBox> objects = new ();
 
-            for(var row = 0;row < CellCount;row++)
-                for(var col = 0;col < CellCount;col++)
-                    for(var box = 0;box<BoxCount;box++)
+
+            var csvPath = dir + "results.csv"; //Path.Combine(Environment.CurrentDirectory, $"something.csv");
+            var streamWriter = new StreamWriter(csvPath);
+            var csvWriter = new CsvWriter(streamWriter, CultureInfo.InvariantCulture);
+            //csvWriter.Context.RegisterClassMap<BoundingInfo>();
+            csvWriter.WriteField("filename");
+            csvWriter.WriteField("class");
+            csvWriter.WriteField("X");
+            csvWriter.WriteField("Y");
+            csvWriter.WriteField("W");
+            csvWriter.WriteField("H");
+            csvWriter.NextRecord();
+
+            for (var row = 0; row < CellCount; row++)
+            {
+                for (var col = 0; col < CellCount; col++)
+                {
+                    for (var box = 0; box < BoxCount; box++)
                     {
                         var rawX = outputs[0, (5 + ClassCount) * box, row, col];
                         var rawY = outputs[0, (5 + ClassCount) * box + 1, row, col];
@@ -167,26 +152,32 @@ namespace YOLO_csharp
                         var y = (float)((row + Sigmoid(rawY)) * cellSize);
 
                         var w = (float)(Math.Exp(rawW) * anchors[box].Item1 * cellSize);
-                        var h = (float)(Math.Exp(rawH) * anchors[box].Item2 * cellSize); 
+                        var h = (float)(Math.Exp(rawH) * anchors[box].Item2 * cellSize);
 
                         var conf = Sigmoid(outputs[0, (5 + ClassCount) * box + 4, row, col]);
 
-                        if(conf > 0.5)
+                        if (conf > 0.5)
                         {
-                            var classes 
-                            = Enumerable
+                            var classes = Enumerable
                             .Range(0, ClassCount)
                             .Select(i => outputs[0, (5 + ClassCount) * box + 5 + i, row, col])
                             .ToArray();
                             objects.Add(new ObjectBox(x - w / 2, y - h / 2, x + w / 2, y + h / 2, conf, IndexOfMax(Softmax(classes))));
+
+                            csvWriter.WriteField("|");
+                            csvWriter.WriteField("?");
+                            csvWriter.WriteField(x.ToString());
+                            csvWriter.WriteField(y.ToString());
+                            csvWriter.WriteField(w.ToString());
+                            csvWriter.WriteField(h.ToString());
+                            csvWriter.NextRecord();
                         }
 
-                        if(conf > 0.01)
+                        if (conf > 0.01)
                         {
-                            boundingBoxes.Mutate(ctx => 
+                            boundingBoxes.Mutate(ctx =>
                             {
-                                ctx.DrawPolygon(
-                                    Pens.Solid(Color.Green, 1),
+                                ctx.DrawPolygon(Pens.Solid(Color.Green, 1),
                                     new PointF[] {
                                         new PointF(x - w / 2, y - h / 2),
                                         new PointF(x + w / 2, y - h / 2),
@@ -195,7 +186,13 @@ namespace YOLO_csharp
                                     });
                             });
                         }
+                        //boundingBoxes.Save(dir + "tmp/" + "boundingboxes"+ row.ToString()+".jpg");
                     }
+                }
+            }
+            
+            streamWriter.Close();
+
             boundingBoxes.Save(dir + "tmp/" + "boundingboxes.jpg");
 
             void Annotate(Image<Rgb24> target, IEnumerable<ObjectBox> objects)
@@ -221,10 +218,10 @@ namespace YOLO_csharp
                     });
                 }
             }
-
             var annotated = resized.Clone();
             Annotate(annotated, objects);
             annotated.SaveAsJpeg(dir + "tmp/" + "annotated.jpg");
+
 
             // Убираем дубликаты
             for(int i = 0;i<objects.Count;i++)
@@ -253,10 +250,14 @@ namespace YOLO_csharp
             Annotate(final, objects);
             final.SaveAsJpeg(dir+"final.jpg");
 
+            return 0;
         }
-        //public static async Task<bool> SetupONNXFileAsync() // загрузка весов нейросети
-        public static bool SetupONNXFile() // загрузка весов нейросети
+        public static async Task<bool> SetupONNXFileAsync() // загрузка весов нейросети
         {
+            if (File.Exists("tinyyolov2-8.onnx"))
+            {
+                return true;
+            }
             using (var client = new WebClient())
             {
                 bool complete = false;
@@ -272,6 +273,48 @@ namespace YOLO_csharp
                 }
             }
             return true;
+        }
+        public static void SetupONNXFile() // загрузка весов нейросети
+        {
+            if (File.Exists("tinyyolov2-8.onnx"))
+            {
+                return;
+            }
+
+            using (var client = new WebClient())
+            {
+                while (true) { 
+                    try
+                    {
+                        client.DownloadFile("https://storage.yandexcloud.net/dotnet4/tinyyolov2-8.onnx", "tinyyolov2-8.onnx");
+                    }
+                    catch (Exception e)
+                    {
+                        continue;
+                    }
+                    break;
+                }
+            }
+            return;
+        }
+        private static int IndexOfMax(float[] values)
+        {
+            int idx = 0;
+            for (int i = 1; i < values.Length; i++)
+                if (values[i] > values[idx])
+                    idx = i;
+            return idx;
+        }
+        private static float Sigmoid(float value)
+        {
+            var e = (float)Math.Exp(value);
+            return e / (1.0f + e);
+        }
+        public static float[] Softmax(float[] values)
+        {
+            var exps = values.Select(v => Math.Exp(v));
+            var sum = exps.Sum();
+            return exps.Select(e => (float)(e / sum)).ToArray();
         }
     }
 
