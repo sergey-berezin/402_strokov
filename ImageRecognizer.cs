@@ -16,11 +16,15 @@ using CsvHelper.Configuration;
 using System.Globalization;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Runtime.CompilerServices;
 
-namespace YOLO_csharp
+namespace ImageRecognizerNamespace
 {
     public class ImageRecognizer
     {
+        const int Canceled = -1;
+
+        static CancellationTokenSource cts = new CancellationTokenSource();
         struct BoundingInfo
         {
             string filename;
@@ -30,12 +34,21 @@ namespace YOLO_csharp
             double W;
             double H;
         }
-        public static int MainAsync(string filename)
-        {
-            Thread Setup= new Thread(SetupONNXFile);
-            Setup.Start();
 
-            string dir = "../../../images/";
+        public static string[] labels = new string[]
+        {
+            "aeroplane", "bicycle", "bird", "boat", "bottle",
+            "bus", "car", "cat", "chair", "cow",
+            "diningtable", "dog", "horse", "motorbike", "person",
+            "pottedplant", "sheep", "sofa", "train", "tvmonitor"
+        };
+       public static string dir = "../../../images/";
+        //public static int MainAsync(string filename)
+        public static async Task MainAsync(string filename)
+        {
+            //Thread Setup= new Thread(SetupONNXFile);
+            //Setup.Start();
+            await Task.WhenAll( SetupONNXFileAsync());
 
             if (!File.Exists(dir + filename + ".jpg"))
             {
@@ -67,7 +80,10 @@ namespace YOLO_csharp
             resized.ProcessPixelRows(pa => 
             {
                 for (int y = 0; y < TargetSize; y++)
-                {           
+                {
+                    if (cts.Token.IsCancellationRequested)
+                        return;
+
                     Span<Rgb24> pixelSpan = pa.GetRowSpan(y);
                     for (int x = 0; x < TargetSize; x++)
                     {
@@ -84,7 +100,6 @@ namespace YOLO_csharp
                NamedOnnxValue.CreateFromTensor("image", input),
             };
 
-            Setup.Join();
 
             // Вычисляем предсказание нейросетью
             using var session = new InferenceSession("tinyyolov2-8.onnx");  
@@ -100,13 +115,6 @@ namespace YOLO_csharp
             const int BoxCount = 5; // 5 прямоугольников в каждой ячейке
             const int ClassCount = 20; // 20 классов
 
-            string[] labels = new string[]
-            {
-                "aeroplane", "bicycle", "bird", "boat", "bottle",
-                "bus", "car", "cat", "chair", "cow",
-                "diningtable", "dog", "horse", "motorbike", "person",
-                "pottedplant", "sheep", "sofa", "train", "tvmonitor"
-            };
 
             var anchors = new (double, double)[]
             {
@@ -123,7 +131,6 @@ namespace YOLO_csharp
 
             List<ObjectBox> objects = new ();
 
-
             var csvPath = dir + "results.csv"; //Path.Combine(Environment.CurrentDirectory, $"something.csv");
             var streamWriter = new StreamWriter(csvPath);
             var csvWriter = new CsvWriter(streamWriter, CultureInfo.InvariantCulture);
@@ -138,6 +145,9 @@ namespace YOLO_csharp
 
             for (var row = 0; row < CellCount; row++)
             {
+                if (cts.Token.IsCancellationRequested)
+                    break;
+
                 for (var col = 0; col < CellCount; col++)
                 {
                     for (var box = 0; box < BoxCount; box++)
@@ -194,35 +204,10 @@ namespace YOLO_csharp
 
             boundingBoxes.Save(dir + "tmp/" + "boundingboxes.jpg");
 
-            void Annotate(Image<Rgb24> target, IEnumerable<ObjectBox> objects)
-            {
-                foreach(var objbox in objects) 
-                {
-                    target.Mutate(ctx => 
-                    {
-                        ctx.DrawPolygon(
-                            Pens.Solid(Color.Blue, 2),
-                            new PointF[] {
-                                new PointF((float)objbox.XMin, (float)objbox.YMin),
-                                new PointF((float)objbox.XMin, (float)objbox.YMax),
-                                new PointF((float)objbox.XMax, (float)objbox.YMax),
-                                new PointF((float)objbox.XMax, (float)objbox.YMin)
-                            });
-                        
-                        ctx.DrawText(
-                            $"{labels[objbox.Class]}", 
-                            SystemFonts.Families.First().CreateFont(16), 
-                            Color.Blue, 
-                            new PointF((float)objbox.XMin, (float)objbox.YMax));
-                    });
-                    target.SaveAsJpegAsync(dir + "tmp/" + "target"+ target.Height.ToString() + ".jpg");
-
-                }
-            }
             var annotated = resized.Clone();
-            Annotate(annotated, objects);
-            annotated.SaveAsJpeg(dir + "tmp/" + "annotated.jpg");
+            await AnnotateAsync(annotated, objects);
 
+            annotated.SaveAsJpeg(dir + "tmp/" + "annotated.jpg");
 
             // Убираем дубликаты
             for(int i = 0;i<objects.Count;i++)
@@ -248,16 +233,14 @@ namespace YOLO_csharp
             }
 
             var final = resized.Clone();
-            Annotate(final, objects);
+            await AnnotateAsync(final, objects);
             final.SaveAsJpeg(dir+"final.jpg");
-
-            return 0;
         }
-        public static async Task<bool> SetupONNXFileAsync() // загрузка весов нейросети
+        public static async Task SetupONNXFileAsync() // загрузка весов нейросети
         {
             if (File.Exists("tinyyolov2-8.onnx"))
             {
-                return true;
+                return;
             }
             using (var client = new WebClient())
             {
@@ -273,7 +256,7 @@ namespace YOLO_csharp
                     }
                 }
             }
-            return true;
+            return;
         }
         public static void SetupONNXFile() // загрузка весов нейросети
         {
@@ -284,7 +267,8 @@ namespace YOLO_csharp
 
             using (var client = new WebClient())
             {
-                while (true) { 
+                while (true)
+                {
                     try
                     {
                         client.DownloadFile("https://storage.yandexcloud.net/dotnet4/tinyyolov2-8.onnx", "tinyyolov2-8.onnx");
@@ -316,6 +300,29 @@ namespace YOLO_csharp
             var exps = values.Select(v => Math.Exp(v));
             var sum = exps.Sum();
             return exps.Select(e => (float)(e / sum)).ToArray();
+        }
+
+        private static async Task AnnotateAsync(Image<Rgb24> target, IEnumerable<ObjectBox> objects)
+        {
+            int i = 0;
+            foreach (var objbox in objects)
+            {
+                target.Mutate(ctx =>
+                {
+                    ctx.DrawPolygon(Pens.Solid(Color.Blue, 2),new PointF[] {
+                           new PointF((float)objbox.XMin, (float)objbox.YMin),
+                           new PointF((float)objbox.XMin, (float)objbox.YMax),
+                           new PointF((float)objbox.XMax, (float)objbox.YMax),
+                           new PointF((float)objbox.XMax, (float)objbox.YMin)}
+                       );
+
+                    ctx.DrawText($"{labels[objbox.Class]}",
+                        SystemFonts.Families.First().CreateFont(16),
+                        Color.Blue,new PointF((float)objbox.XMin, (float)objbox.YMax));
+                });
+                await target.SaveAsJpegAsync(dir + "tmp/" + objbox.Class.ToString() + i.ToString() +  ".jpg");
+                i++;
+            }
         }
     }
 
