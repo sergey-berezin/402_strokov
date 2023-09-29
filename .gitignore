@@ -102,6 +102,9 @@ ClientBin/
 
 *.publishsettings
 
+/tmp
+/.vs
+
 # RIA/Silverlight projects
 Generated_Code/
 
@@ -134,3 +137,6 @@ $RECYCLE.BIN/
 .DS_Store
 
 _NCrunch*
+/ConsolePart/images/tmp
+/ConsolePart/images/results.csv
+/ConsolePart/images/final.jpg
