@@ -28,7 +28,7 @@ namespace ImageRecognizerNamespace
         //public static int MainAsync(string filename)
         public static async Task<List<ObjectBox>> FindAsync(string filename, CancellationTokenSource cts)
         {
-            await Task.WhenAll(SetupONNXFileAsync());
+            await SetupONNXFileAsync();
 
             if (!File.Exists(dir + filename + ".jpg"))
             {
@@ -161,7 +161,7 @@ namespace ImageRecognizerNamespace
             var annotated = resized.Clone();
             await AnnotateAsync(annotated, objects);
 
-            annotated.SaveAsJpeg(dir + "tmp/" + "annotated.jpg");
+            await annotated.SaveAsJpegAsync(dir + "tmp/" + "annotated.jpg");
 
             // Убираем дубликаты
             for (int i = 0; i < objects.Count; i++)
@@ -188,46 +188,63 @@ namespace ImageRecognizerNamespace
 
             var final = resized.Clone();
             await AnnotateAsync(final, objects);
-            final.SaveAsJpeg(dir + "final.jpg");
+            await final.SaveAsJpegAsync(dir + "final.jpg");
             return objects;
         }
-        public static async Task SetupONNXFileAsync() // загрузка весов нейросети
+        private static async Task SetupONNXFileAsync() // загрузка весов нейросети
         {
             using (var client = new WebClient())
             {
-                while (true)
-                {
-                    if (File.Exists("tinyyolov2-8.onnx"))
-                        return;
-
-                   client.DownloadFile("https://storage.yandexcloud.net/dotnet4/tinyyolov2-8.onnx", "tinyyolov2-8.onnx");
-                }
-            }
-            return;
-        }
-        public static void SetupONNXFile() // загрузка весов нейросети
-        {
-            if (File.Exists("tinyyolov2-8.onnx"))
-            {
-                return;
-            }
-
-            using (var client = new WebClient())
-            {
-                while (true)
+                if (File.Exists("tinyyolov2-8.onnx"))
+                    return;
+                else
+                    Write("Downloading model");
+                int attempts = 0;
+                while (true && (attempts < 10))
                 {
                     try
                     {
-                        client.DownloadFile("https://storage.yandexcloud.net/dotnet4/tinyyolov2-8.onnx", "tinyyolov2-8.onnx");
+                        await client.DownloadFileTaskAsync("https://storage.yandexcloud.net/dotnet4/tinyyolov2-8.onnx", "tinyyolov2-8.onnx");
                     }
-                    catch (Exception e)
+                    catch (Exception ex)
                     {
+                        Thread.Sleep(5000);
+                        attempts++;
                         continue;
                     }
                     break;
                 }
+                if (attempts < 10)
+                    return;
+                else 
+                    throw new Exception("ONNX File loading error!");
             }
-            return;
+        }
+        public static void SetupONNXFile() // загрузка весов нейросети
+        {
+            using (var client = new WebClient())
+            {
+                int attempts = 0;
+                while (true && (attempts < 10))
+                {
+                    if (File.Exists("tinyyolov2-8.onnx"))
+                        return;
+
+                    try
+                    {
+                        client.DownloadFile("https://storage.yandexcloud.net/dotnet4/tinyyolov2-8.onnx", "tinyyolov2-8.onnx");
+                    }
+                    catch (Exception ex)
+                    {
+                        Thread.Sleep(5000);
+                        attempts++;
+                    }
+                }
+                if (attempts < 10)
+                    return;
+                else
+                    throw new Exception("ONNX File loading error!");
+            }
         }
         private static int IndexOfMax(float[] values)
         {
@@ -254,22 +271,29 @@ namespace ImageRecognizerNamespace
             //int i = 0;
             foreach (var objbox in objects)
             {
-                target.Mutate(ctx =>
+                await Task.Run(() =>
                 {
-                    ctx.DrawPolygon(Pens.Solid(Color.Blue, 2), new PointF[] {
+                    target.Mutate(ctx =>
+                    {
+                        ctx.DrawPolygon(Pens.Solid(Color.Blue, 2), new PointF[] {
                            new PointF((float)objbox.XMin, (float)objbox.YMin),
                            new PointF((float)objbox.XMin, (float)objbox.YMax),
                            new PointF((float)objbox.XMax, (float)objbox.YMax),
                            new PointF((float)objbox.XMax, (float)objbox.YMin)}
-                       );
+                           );
 
-                    ctx.DrawText($"{labels[objbox.Class]}",
-                        SystemFonts.Families.First().CreateFont(16),
-                        Color.Blue, new PointF((float)objbox.XMin, (float)objbox.YMax));
+                        ctx.DrawText($"{labels[objbox.Class]}",
+                            SystemFonts.Families.First().CreateFont(16),
+                            Color.Blue, new PointF((float)objbox.XMin, (float)objbox.YMax));
+                    });
                 });
                 //await target.SaveAsJpegAsync(dir + "tmp/" + objbox.Class.ToString() + i.ToString() +  ".jpg");
                 //i++;
             }
+        }
+        private static void Write(string s)
+        {
+            Console.WriteLine(s);
         }
     }
 
