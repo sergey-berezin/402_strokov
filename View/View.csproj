@@ -94,11 +94,5 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\ImageRecognizer\ImageRecognizer.csproj">
-      <Project>{8fd35cd5-ffaf-4b57-9ceb-64f82d307ab3}</Project>
-      <Name>ImageRecognizer</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

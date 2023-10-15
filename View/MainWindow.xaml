@@ -34,12 +34,12 @@
                 <ListBox x:Name="ImagesList" Margin="10">
 
                 </ListBox>
-                <ListView x:Name="ImagesListView" ItemsSource="{Binding Images}">
+                <ListView x:Name="ImagesListView" ItemsSource="{Binding Path=Images}">
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <StackPanel>
-                                <Image Source="{Binding Images.Img}"/>
-                                <TextBlock Text="{Binding Images.ClassName}"/>
+                                <Image Source="{Binding Path=Images.Img}"/>
+                                <TextBlock Text="{Binding Images.Class}"/>
                             </StackPanel>
                         </DataTemplate>
                     </ListView.ItemTemplate>
