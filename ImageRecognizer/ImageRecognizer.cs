@@ -24,20 +24,19 @@ namespace ImageRecognizerNamespace
             "diningtable", "dog", "horse", "motorbike", "person",
             "pottedplant", "sheep", "sofa", "train", "tvmonitor"
         };
-        public static string dir = "../../../../images/";
         //public static int MainAsync(string filename)
         public static async Task<List<ObjectBox>> FindAsync(string filename, CancellationTokenSource cts)
         {
             await SetupONNXFileAsync();
 
-            if (!File.Exists(dir + filename + ".jpg"))
+            if (!File.Exists(filename + ".jpg"))
             {
                 throw new Exception("File doesn't exist");
             }
             ////////////////////////////////////////////////////////////////////////////////////////////
 
-            //using var image = Image.Load<Rgb24>(args.FirstOrDefault() ?? dir + filename + ".jpg");
-            using var image = Image.Load<Rgb24>(dir + filename + ".jpg");
+            //using var image = Image.Load<Rgb24>(args.FirstOrDefault() ??   filename + ".jpg");
+            using var image = Image.Load<Rgb24>(filename + ".jpg");
 
             // Размер изображения
             const int TargetSize = 416;
@@ -156,12 +155,12 @@ namespace ImageRecognizerNamespace
             if (cts.Token.IsCancellationRequested)
                 return objects;
 
-            boundingBoxes.Save(dir + "tmp/" + "boundingboxes.jpg");
+            boundingBoxes.Save("tmp/" + "boundingboxes.jpg");
 
             var annotated = resized.Clone();
             await AnnotateAsync(annotated, objects);
 
-            await annotated.SaveAsJpegAsync(dir + "tmp/" + "annotated.jpg");
+            await annotated.SaveAsJpegAsync("tmp/" + "annotated.jpg");
 
             // Убираем дубликаты
             for (int i = 0; i < objects.Count; i++)
@@ -188,7 +187,7 @@ namespace ImageRecognizerNamespace
 
             var final = resized.Clone();
             await AnnotateAsync(final, objects);
-            await final.SaveAsJpegAsync(dir + "final.jpg");
+            await final.SaveAsJpegAsync("final.jpg");
             return objects;
         }
         private static async Task SetupONNXFileAsync() // загрузка весов нейросети
