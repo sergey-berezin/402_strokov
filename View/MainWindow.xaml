@@ -7,7 +7,21 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="900" Width="1600">
     <Window.Resources>
-        <CollectionViewSource x:Name="cvs" x:Key="cvs" Source="{Binding Images}" />
+        <DataTemplate x:Key="ImageTemplate">
+            <DockPanel>
+                <Image Source="{Binding Image}" MaxHeight="100" MaxWidth="100"/>
+                <DockPanel VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Class}" HorizontalAlignment="Center" TextAlignment="Center"/>
+                    <TextBlock Text="    " HorizontalAlignment="Right" TextAlignment="Right"/>
+                    <TextBlock Text="{Binding Confidence}" HorizontalAlignment="Right" TextAlignment="Right"/>
+                </DockPanel>
+            </DockPanel>
+        </DataTemplate>
+
+        <CollectionViewSource x:Key="cvs" x:Name="cvs" Source="{Binding DetectedImages}">
+            <CollectionViewSource.SortDescriptions>
+            </CollectionViewSource.SortDescriptions>
+        </CollectionViewSource>
     </Window.Resources>
     <StackPanel>
         <Menu x:Name="menu"
@@ -34,6 +48,7 @@
                 <ListBox x:Name="ImagesList" Margin="10">
 
                 </ListBox>
+                <ListView Name="bboxesListView" ItemsSource="{Binding Source={StaticResource cvs}}" ItemTemplate="{StaticResource ImageTemplate}"/>
                 <ListView x:Name="ImagesListView" ItemsSource="{Binding Path=Images}">
                     <ListView.ItemTemplate>
                         <DataTemplate>

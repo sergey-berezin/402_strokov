@@ -13,6 +13,12 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "View", "View\View.csproj", "{E5B80CB8-BBF1-4180-9E4B-F7C26A664471}"
 	ProjectSection(ProjectDependencies) = postProject
 		{8FD35CD5-FFAF-4B57-9CEB-64F82D307AB3} = {8FD35CD5-FFAF-4B57-9CEB-64F82D307AB3}
+		{9203CE7E-3619-49F4-871A-E120BA64D8E1} = {9203CE7E-3619-49F4-871A-E120BA64D8E1}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ViewModel", "ViewModel\ViewModel.csproj", "{9203CE7E-3619-49F4-871A-E120BA64D8E1}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8FD35CD5-FFAF-4B57-9CEB-64F82D307AB3} = {8FD35CD5-FFAF-4B57-9CEB-64F82D307AB3}
 	EndProjectSection
 EndProject
 Global
@@ -47,6 +53,14 @@ Global
 		{E5B80CB8-BBF1-4180-9E4B-F7C26A664471}.Release|Any CPU.Build.0 = Release|Any CPU
 		{E5B80CB8-BBF1-4180-9E4B-F7C26A664471}.Release|x64.ActiveCfg = Release|Any CPU
 		{E5B80CB8-BBF1-4180-9E4B-F7C26A664471}.Release|x64.Build.0 = Release|Any CPU
+		{9203CE7E-3619-49F4-871A-E120BA64D8E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9203CE7E-3619-49F4-871A-E120BA64D8E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9203CE7E-3619-49F4-871A-E120BA64D8E1}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{9203CE7E-3619-49F4-871A-E120BA64D8E1}.Debug|x64.Build.0 = Debug|Any CPU
+		{9203CE7E-3619-49F4-871A-E120BA64D8E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9203CE7E-3619-49F4-871A-E120BA64D8E1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9203CE7E-3619-49F4-871A-E120BA64D8E1}.Release|x64.ActiveCfg = Release|Any CPU
+		{9203CE7E-3619-49F4-871A-E120BA64D8E1}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

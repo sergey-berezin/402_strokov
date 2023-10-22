@@ -4,7 +4,8 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using Microsoft.Win32;
-//using ImageRecognizerNamespace;
+using ViewModel;
+using ImageRecognizer;
 using System.Threading;
 
 namespace View
@@ -13,6 +14,7 @@ namespace View
     /// Логика взаимодействия для MainWindow.xaml
     /// </summary>
     /// 
+    //public List<DetectedImageView> DetectedImages { get; private set; }
     struct CustomImageView
     {
         BitmapImage Img;
