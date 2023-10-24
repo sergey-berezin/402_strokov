@@ -25,7 +25,7 @@ namespace ImageRecognizerNamespace
             "pottedplant", "sheep", "sofa", "train", "tvmonitor"
         };
         //public static int MainAsync(string filename)
-        public static async Task<List<ObjectBox>> FindAsync(string filename, CancellationTokenSource cts)
+        public static async Task<List<ObjectBox>> FindAsync(string filename, CancellationTokenSource cts = null)
         {
             await SetupONNXFileAsync();
 

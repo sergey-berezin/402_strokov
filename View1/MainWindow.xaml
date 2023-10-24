@@ -27,16 +27,14 @@
         <Menu x:Name="menu"
            VerticalAlignment="Top"
            Height="18">
-            <MenuItem Header="File">
-                <MenuItem x:Name="LoadButton"
+                <MenuItem Header="File">
+                    <MenuItem x:Name="LodButton"
                        Header="Load"
                        Click="btnOpenFiles_Click"
+                   
                        CommandParameter="From Button"/>
-            </MenuItem>
-            <MenuItem x:Name="RunButton"
-                    Header="Run" Command="{Binding StartCommand}">
-            </MenuItem>
-        </Menu>
+                </MenuItem>
+            </Menu>
         <Grid>
             <Grid.RowDefinitions>
             </Grid.RowDefinitions>
@@ -47,6 +45,9 @@
 
             <StackPanel Grid.Column="0">
                 <TextBlock Text="Loaded Images" FontSize="20" HorizontalAlignment="Center"/>
+                <ListBox x:Name="ImagesList" Margin="10">
+
+                </ListBox>
                 <ListView Name="bboxesListView" ItemsSource="{Binding Source={StaticResource cvs}}" ItemTemplate="{StaticResource ImageTemplate}"/>
                 <ListView x:Name="ImagesListView" ItemsSource="{Binding Path=Images}">
                     <ListView.ItemTemplate>
@@ -58,9 +59,6 @@
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
-            </StackPanel>
-
-            <StackPanel Grid.Column="1">
             </StackPanel>
         </Grid>
     </StackPanel>

@@ -27,7 +27,7 @@ public class ConsolePart
 
     private static async Task WriteCSVAsync(List<ObjectBox> objects)
     {
-        var csvPath = ImageRecognizer.dir + "results.csv"; //Path.Combine(Environment.CurrentDirectory, $"something.csv");
+        var csvPath = "results.csv"; //Path.Combine(Environment.CurrentDirectory, $"something.csv");
         using (var streamWriter = new StreamWriter(csvPath))
         {
             using (var csvWriter = new CsvWriter(streamWriter, CultureInfo.InvariantCulture))
