@@ -2,18 +2,13 @@
 using System.Windows;
 using System.Windows.Input;
 using Microsoft.Win32;
-//using ViewModel;
-using ImageRecognizerNamespace;
+using ViewModel;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace View
 {
-    //public List<DetectedImageView> DetectedImages { get; private set; }
-
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window//, IUIServices
     {
-
         private readonly ICommand startCommand;
         public ICommand StartCommand => startCommand;
         string[]? FIleNames;
@@ -24,30 +19,14 @@ namespace View
         public MainWindow()
         {
             InitializeComponent();
-            startCommand = new AsyncCommandStart(async _ =>
-            {
-                //for (int i = 1; i <= 5; i++)
-                //{
-                //    label.Content = i;
-                //    await Task.Delay(1000);
-                //}
-                if (FIleNames == null)
-                    FIleNames = GetFileNames();
-
-                if (FIleNames == null)
-                    return;
-
-                foreach(string s in FIleNames)
-                    await ImageRecognizer.FindAsync(s);
-            });
-            DataContext = this;
+            //DataContext = new ViewModelClass();
         }
         private void CanLoadCommandHandler(object sender, CanExecuteRoutedEventArgs e)
         {
             e.CanExecute = !m_bRunning;
         }
 
-        private void btnOpenFiles_Click(object sender, RoutedEventArgs e)
+        private void OpenFilesDialog(object sender, RoutedEventArgs e)
         {
             FIleNames = GetFileNames();
         }

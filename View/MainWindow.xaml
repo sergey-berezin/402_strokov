@@ -30,7 +30,7 @@
             <MenuItem Header="File">
                 <MenuItem x:Name="LoadButton"
                        Header="Load"
-                       Click="btnOpenFiles_Click"
+                       Click="OpenFilesDialog"
                        CommandParameter="From Button"/>
             </MenuItem>
             <MenuItem x:Name="RunButton"

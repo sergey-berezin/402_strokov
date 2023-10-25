@@ -35,7 +35,6 @@ namespace ImageRecognizerNamespace
             }
             ////////////////////////////////////////////////////////////////////////////////////////////
 
-            //using var image = Image.Load<Rgb24>(args.FirstOrDefault() ??   filename + ".jpg");
             using var image = Image.Load<Rgb24>(filename + ".jpg");
 
             // Размер изображения
