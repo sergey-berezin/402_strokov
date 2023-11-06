@@ -1,37 +1,34 @@
-﻿using System;
+﻿using System.Threading;
 using System.Windows;
 using System.Windows.Input;
 using Microsoft.Win32;
 using ViewModel;
-using System.Threading;
 
 namespace View
 {
-    public partial class MainWindow : Window//, IUIServices
+    public partial class MainWindow : Window, IUIServices
     {
-        private readonly ICommand startCommand;
-        public ICommand StartCommand => startCommand;
+        //private readonly ICommand startCommand;
+        //public ICommand StartCommand => startCommand;
         string[]? FIleNames;
-        static CancellationTokenSource cts = new CancellationTokenSource();
 
         bool m_bRunning = false;
-        //List<CustomImageView> Images = new List<CustomImageView>();
         public MainWindow()
         {
             InitializeComponent();
-            //DataContext = new ViewModelClass();
+            DataContext = new ViewModelClass(this);
         }
-        private void CanLoadCommandHandler(object sender, CanExecuteRoutedEventArgs e)
+        public void CanLoadCommandHandler(object sender, CanExecuteRoutedEventArgs e)
         {
             e.CanExecute = !m_bRunning;
         }
 
-        private void OpenFilesDialog(object sender, RoutedEventArgs e)
+        public void OpenFilesDialog(object sender, RoutedEventArgs e)
         {
             FIleNames = GetFileNames();
         }
 
-        private string[]? GetFileNames()
+        public string[]? GetFileNames()
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
             openFileDialog.Multiselect = true;

@@ -15,10 +15,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ViewModel", "ViewModel\View
 		{8FD35CD5-FFAF-4B57-9CEB-64F82D307AB3} = {8FD35CD5-FFAF-4B57-9CEB-64F82D307AB3}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "View", "View\View.csproj", "{4ACA3973-761B-41AB-BF07-FCC33AC9C8E6}"
-	ProjectSection(ProjectDependencies) = postProject
-		{8FD35CD5-FFAF-4B57-9CEB-64F82D307AB3} = {8FD35CD5-FFAF-4B57-9CEB-64F82D307AB3}
-	EndProjectSection
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "View", "View\View.csproj", "{4ACA3973-761B-41AB-BF07-FCC33AC9C8E6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

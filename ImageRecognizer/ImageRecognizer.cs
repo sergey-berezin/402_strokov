@@ -1,22 +1,30 @@
 ﻿using System;
-using System.Net;
-using SixLabors.ImageSharp; // Из одноимённого пакета NuGet
-using SixLabors.ImageSharp.PixelFormats;
-using System.Linq;
-using SixLabors.ImageSharp.Processing;
-using SixLabors.ImageSharp.Drawing.Processing;
-using Microsoft.ML.OnnxRuntime.Tensors;
-using Microsoft.ML.OnnxRuntime;
 using System.Collections.Generic;
-using SixLabors.Fonts;
+using System.Collections.ObjectModel;
 using System.IO;
-using System.Threading.Tasks;
+using System.Linq;
+using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.ML.OnnxRuntime;
+using Microsoft.ML.OnnxRuntime.Tensors;
+using SixLabors.Fonts;
+using SixLabors.ImageSharp; // Из одноимённого пакета NuGet
+using SixLabors.ImageSharp.Drawing.Processing;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 
 namespace ImageRecognizerNamespace
 {
     public class ImageRecognizer
     {
+        public static async Task<ImageRecognizer> Create()
+        {
+            Task task = SetupONNXFileAsync();
+            await task;
+            return new ImageRecognizer();
+        }
+
         public static string[] labels = new string[]
         {
             "aeroplane", "bicycle", "bird", "boat", "bottle",
@@ -264,9 +272,8 @@ namespace ImageRecognizerNamespace
             return exps.Select(e => (float)(e / sum)).ToArray();
         }
 
-        private static async Task AnnotateAsync(Image<Rgb24> target, IEnumerable<ObjectBox> objects)
+        public static async Task AnnotateAsync(Image<Rgb24> target, IEnumerable<ObjectBox> objects)
         {
-            //int i = 0;
             foreach (var objbox in objects)
             {
                 await Task.Run(() =>
@@ -285,13 +292,39 @@ namespace ImageRecognizerNamespace
                             Color.Blue, new PointF((float)objbox.XMin, (float)objbox.YMax));
                     });
                 });
-                //await target.SaveAsJpegAsync(dir + "tmp/" + objbox.Class.ToString() + i.ToString() +  ".jpg");
-                //i++;
             }
+        }
+        public static Image<Rgb24> Annotate(Image<Rgb24> target, IEnumerable<ObjectBox> objects)
+        {
+            foreach (var objbox in objects)
+            {
+                target.Mutate(ctx =>
+                {
+                    ctx.DrawPolygon(Pens.Solid(Color.Blue, 2), new PointF[] {
+                        new PointF((float)objbox.XMin, (float)objbox.YMin),
+                        new PointF((float)objbox.XMin, (float)objbox.YMax),
+                        new PointF((float)objbox.XMax, (float)objbox.YMax),
+                        new PointF((float)objbox.XMax, (float)objbox.YMin)}
+                        );
+
+                    ctx.DrawText($"{labels[objbox.Class]}",
+                        SystemFonts.Families.First().CreateFont(16),
+                        Color.Blue, new PointF((float)objbox.XMin, (float)objbox.YMax));
+                });
+            }
+            return target;
         }
         private static void Write(string s)
         {
-            Console.WriteLine(s);
+            //Console.WriteLine(s);
+            throw new Exception(s);
+        }
+        static public ObservableCollection<Image<Rgb24>> GetImages(ObservableCollection<string> file_names)
+        {
+            ObservableCollection<Image<Rgb24>> list = new();
+            foreach (string file_name in file_names)
+                list.Add(Image.Load<Rgb24>(file_name));
+            return list;
         }
     }
 

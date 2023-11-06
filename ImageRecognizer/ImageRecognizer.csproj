@@ -7,13 +7,13 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>Strokov.ImageRecognizer</Title>
     <Nullable>annotations</Nullable>
-    <PackageOutputPath>C:\Users\benst\source\repos\402_strokov\LocalNuget</PackageOutputPath>
-    <PackAsTool>False</PackAsTool>
     <VersionPrefix>1.0.0</VersionPrefix>
+    <PackageOutputPath>C:\Users\benst\source\My NuGets</PackageOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="CsvHelper" Version="30.0.1" />
+    <PackageReference Include="Microsoft.ML.DataView" Version="2.0.1" />
     <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.7.0" />
     <PackageReference Include="SixLabors.Imagesharp" Version="3.0.2" />
     <PackageReference Include="SixLabors.ImageSharp.Drawing" Version="2.0.0" />
