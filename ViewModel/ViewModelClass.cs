@@ -44,51 +44,6 @@ namespace ViewModel
             Objects = objects;
         }
     }
-    //public class DetectedImageViewModel
-    //{
-    //    private IEnumerable<ObjectBox> BBoxes { get; set; }
-    //    private Image<Rgb24> OriginalImage { get; }
-    //    private WeakReference SelectedImageRef { get; set; }
-
-    //    public BitmapSource SelectedImage
-    //    {
-    //        get
-    //        {
-    //            var selectedImage = SelectedImageRef.Target;
-    //            if (selectedImage == null)
-    //            {
-    //                var mainImage = ImageToBitmapSource(ImageRecognizer.Annotate(OriginalImage, BBoxes));
-    //                SelectedImageRef = new WeakReference(mainImage);
-    //                return mainImage;
-    //            }
-    //            else
-    //            {
-    //                return (BitmapSource)selectedImage;
-    //            }
-    //        }
-    //    }
-    //    public BitmapSource Image { get; }
-    //    public string Class { get; set; }
-    //    public double Confidence { get; set; }
-
-    //    public DetectedImageView(SegmentedObject segmentedObject)
-    //    {
-    //        BBoxes = segmentedObject.bbox;
-    //        OriginalImage = segmentedObject.OriginalImage;
-    //        SelectedImageRef = new WeakReference(null);
-    //        Image = ImageToBitmapSource(segmentedObject.BoundingBox);
-    //        Class = segmentedObject.Class;
-    //        Confidence = segmentedObject.Confidence;
-    //    }
-
-    //    private BitmapSource ImageToBitmapSource(Image<Rgb24> image)
-    //    {
-    //        byte[] pixels = new byte[image.Width * image.Height * Unsafe.SizeOf<Rgb24>()];
-    //        image.CopyPixelDataTo(pixels);
-
-    //        return BitmapFrame.Create(image.Width, image.Height, 96, 96, PixelFormats.Rgb24, null, pixels, 3 * image.Width);
-    //    }
-    //}
     public class ViewModelClass : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
@@ -102,7 +57,7 @@ namespace ViewModel
         public ObservableCollection<Image<Rgb24>> Images { get; set; }
         public ObservableCollection<string> Paths { get; set; }
         public ICommand LoadCommand { get; private set; }
-        public ICommand RunCommand { get; private set; }
+        public ICommand RunCommand { get; private set; }//start command
         public ICommand StopCommand { get; private set; }
         public ICommand ErrorCommand { get; private set; }
 

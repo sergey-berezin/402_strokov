@@ -6,7 +6,7 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="900" Width="1600">
     <Window.Resources>
-        <CollectionViewSource x:Key="cvs" x:Name="cvs" Source="{Binding DetectedImages}">
+        <CollectionViewSource x:Key="cvs" x:Name="cvs" Source="{Binding imageViews}">
             <CollectionViewSource.SortDescriptions>
             </CollectionViewSource.SortDescriptions>
         </CollectionViewSource>
@@ -29,13 +29,10 @@
            VerticalAlignment="Top"
            Height="18">
             <MenuItem Header="File">
-                <MenuItem x:Name="LoadButton"
-                       Header="Load"
-                       Click="OpenFilesDialog"
-                       CommandParameter="From Button"/>
+                <MenuItem Command="{Binding LoadCommand}"
+                       Header="Load"/>
             </MenuItem>
-            <MenuItem x:Name="RunButton"
-                    Header="Run" Command="{Binding StartCommand}">
+            <MenuItem Header="Run" Command="{Binding RunCommand}">
             </MenuItem>
         </Menu>
         <Grid Height="860">
