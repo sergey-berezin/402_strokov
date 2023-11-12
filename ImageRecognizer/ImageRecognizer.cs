@@ -32,18 +32,31 @@ namespace ImageRecognizerNamespace
             "diningtable", "dog", "horse", "motorbike", "person",
             "pottedplant", "sheep", "sofa", "train", "tvmonitor"
         };
-        //public static int MainAsync(string filename)
+        private static string TmpDirr;
+        //public static int Main(string filename)
         public static async Task<List<ObjectBox>> FindAsync(string filename, CancellationTokenSource cts = null)
         {
             await SetupONNXFileAsync();
 
-            if (!File.Exists(filename + ".jpg"))
+            if (!File.Exists(filename))
             {
                 throw new Exception("File doesn't exist");
             }
             ////////////////////////////////////////////////////////////////////////////////////////////
 
-            using var image = Image.Load<Rgb24>(filename + ".jpg");
+            TmpDirr = filename.Substring(0,filename.LastIndexOf('\\')+1) + "tmp\\";
+            string Filename = filename.Substring(filename.LastIndexOf("\\")+1);
+
+            if(!Directory.Exists(TmpDirr))
+            {
+                Directory.CreateDirectory(TmpDirr);
+            }
+            //else 
+            //{ 
+            //    Directory.Delete(TmpDirr, true);
+            //    Directory.CreateDirectory(TmpDirr);
+            //}
+            using var image = Image.Load<Rgb24>(filename);
 
             // Размер изображения
             const int TargetSize = 416;
@@ -65,7 +78,8 @@ namespace ImageRecognizerNamespace
                 for (int y = 0; y < TargetSize; y++)
                 {
                     if (cts.Token.IsCancellationRequested)
-                        return;
+                        throw new Exception("Cancelation requested");
+                    //return;
 
                     Span<Rgb24> pixelSpan = pa.GetRowSpan(y);
                     for (int x = 0; x < TargetSize; x++)
@@ -160,14 +174,15 @@ namespace ImageRecognizerNamespace
             }
 
             if (cts.Token.IsCancellationRequested)
-                return objects;
+                throw new Exception("Cancelation requested");
+                //return objects;
 
-            boundingBoxes.Save("tmp/" + "boundingboxes.jpg");
+            //boundingBoxes.Save(TmpDirr + "boundingboxes" + Filename);
 
-            var annotated = resized.Clone();
-            await AnnotateAsync(annotated, objects);
+            //var annotated = resized.Clone();
+            //await AnnotateAsync(annotated, objects);
 
-            await annotated.SaveAsJpegAsync("tmp/" + "annotated.jpg");
+            //await annotated.SaveAsJpegAsync(TmpDirr + "annotated " + Filename);
 
             // Убираем дубликаты
             for (int i = 0; i < objects.Count; i++)
@@ -194,7 +209,7 @@ namespace ImageRecognizerNamespace
 
             var final = resized.Clone();
             await AnnotateAsync(final, objects);
-            await final.SaveAsJpegAsync("final.jpg");
+            await final.SaveAsJpegAsync(TmpDirr + "final " + Filename) ;
             return objects;
         }
         private static async Task SetupONNXFileAsync() // загрузка весов нейросети
@@ -203,8 +218,8 @@ namespace ImageRecognizerNamespace
             {
                 if (File.Exists("tinyyolov2-8.onnx"))
                     return;
-                else
-                    Write("Downloading model");
+                //else
+                //    Write("Downloading model");
                 int attempts = 0;
                 while (true && (attempts < 10))
                 {
@@ -296,20 +311,24 @@ namespace ImageRecognizerNamespace
         }
         public static Image<Rgb24> Annotate(Image<Rgb24> target, IEnumerable<ObjectBox> objects)
         {
+            int maxDimension = Math.Max(target.Width, target.Height);
+            float scale = (float)maxDimension / 416;
             foreach (var objbox in objects)
             {
                 target.Mutate(ctx =>
                 {
-                    ctx.DrawPolygon(Pens.Solid(Color.Blue, 2), new PointF[] {
-                        new PointF((float)objbox.XMin, (float)objbox.YMin),
-                        new PointF((float)objbox.XMin, (float)objbox.YMax),
-                        new PointF((float)objbox.XMax, (float)objbox.YMax),
-                        new PointF((float)objbox.XMax, (float)objbox.YMin)}
-                        );
+                    ctx.Resize(new ResizeOptions { Size = new Size(maxDimension, maxDimension), Mode = ResizeMode.Pad }).DrawPolygon(
+                    Pens.Solid(Color.Blue, 1 + maxDimension / 416),
+                    new PointF[] {
+                        new PointF((float)objbox.XMin * scale, (float) objbox.YMin * scale),
+                        new PointF((float)objbox.XMin * scale, (float) objbox.YMax * scale),
+                        new PointF((float)objbox.XMax * scale, (float) objbox.YMax * scale),
+                        new PointF((float) objbox.XMax * scale, (float) objbox.YMin * scale)
+                    });
 
                     ctx.DrawText($"{labels[objbox.Class]}",
-                        SystemFonts.Families.First().CreateFont(16),
-                        Color.Blue, new PointF((float)objbox.XMin, (float)objbox.YMax));
+                        SystemFonts.Families.First().CreateFont(16 * scale),
+                        Color.Blue, new PointF((float)objbox.XMin * scale, (float)objbox.YMax * scale));
                 });
             }
             return target;
@@ -325,6 +344,13 @@ namespace ImageRecognizerNamespace
             foreach (string file_name in file_names)
                 list.Add(Image.Load<Rgb24>(file_name));
             return list;
+        }
+        private static Random random = new Random();
+        public static string RandomString(int length)
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            return new string(Enumerable.Repeat(chars, length)
+                .Select(s => s[random.Next(s.Length)]).ToArray());
         }
     }
 

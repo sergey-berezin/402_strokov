@@ -3,23 +3,26 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:scm="clr-namespace:System.ComponentModel;assembly=WindowsBase"
         mc:Ignorable="d"
         Title="MainWindow" Height="900" Width="1600">
     <Window.Resources>
         <CollectionViewSource x:Key="cvs" x:Name="cvs" Source="{Binding imageViews}">
             <CollectionViewSource.SortDescriptions>
+                <scm:SortDescription Direction="Descending" PropertyName="ObjectCount"/>
+                <scm:SortDescription Direction="Ascending" PropertyName="FileName"/>
             </CollectionViewSource.SortDescriptions>
         </CollectionViewSource>
 
         <DataTemplate x:Key="ImageTemplate">
             <DockPanel>
                 <StackPanel Margin="5">
-                    <Image Width="100" Height="75" Source="{Binding Path=Bitmap}" />
+                    <Image Width="100" Height="75" Source="{Binding Path=Bitmap}"/>
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock FontSize="16" Text="Objects: " HorizontalAlignment="Center" />
-                        <TextBlock FontSize="16" Text="{Binding Path=ObjectCount}" HorizontalAlignment="Center" />
+                        <TextBlock FontSize="16" Text="Objects: " HorizontalAlignment="Center"/>
+                        <TextBlock FontSize="16" Text="{Binding Path=ObjectCount}" HorizontalAlignment="Center"/>
                     </StackPanel>
-                    <TextBlock FontSize="16" Text="{Binding Path=FileName}" HorizontalAlignment="Center" />
+                    <TextBlock FontSize="16" Text="{Binding Path=FileName}" HorizontalAlignment="Center"/>
                 </StackPanel>
             </DockPanel>
         </DataTemplate>
@@ -32,8 +35,8 @@
                 <MenuItem Command="{Binding LoadCommand}"
                        Header="Load"/>
             </MenuItem>
-            <MenuItem Header="Run" Command="{Binding RunCommand}">
-            </MenuItem>
+            <MenuItem Header="Run" Command="{Binding RunCommand}"/>
+            <MenuItem Header="Stop" Command="{Binding StopCommand}"/>
         </Menu>
         <Grid Height="860">
             <Grid.RowDefinitions>
@@ -47,11 +50,10 @@
                 <TextBlock Text="Loaded Images" 
                            FontSize="20" 
                            HorizontalAlignment="Center"/>
-                <ListView x:Name="listView"  
-                          ItemsSource="{Binding Source={StaticResource cvs}}" 
-                          ItemTemplate="{StaticResource ImageTemplate}" 
-                          Grid.Column="0" 
-                          Grid.ColumnSpan="3" Height="830">
+                <ListView x:Name="listView"
+                          ItemsSource="{Binding Source={StaticResource cvs}}"
+                          ItemTemplate="{StaticResource ImageTemplate}"
+                          Grid.Column="0" Height="820" Margin="5">
                 </ListView>
             </StackPanel>
 

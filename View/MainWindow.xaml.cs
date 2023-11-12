@@ -10,7 +10,7 @@ namespace View
     {
         //private readonly ICommand startCommand;
         //public ICommand StartCommand => startCommand;
-        string[]? FIleNames;
+        //string[]? FIleNames;
 
         bool m_bRunning = false;
         public MainWindow()
@@ -23,12 +23,7 @@ namespace View
             e.CanExecute = !m_bRunning;
         }
 
-        public void OpenFilesDialog(object sender, RoutedEventArgs e)
-        {
-            FIleNames = GetFileNames();
-        }
-
-        public string[]? GetFileNames()
+        public string[]? OpenFilesDialog()
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
             openFileDialog.Multiselect = true;

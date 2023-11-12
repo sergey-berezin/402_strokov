@@ -36,30 +36,33 @@ namespace ViewModel
             this.canExecute = canExecute;
         }
 
-        public event EventHandler CanExecuteChanged
+        public event EventHandler? CanExecuteChanged
         {
             add { CommandManager.RequerySuggested += value; }
             remove { CommandManager.RequerySuggested -= value; }
         }
 
-        public bool CanExecute(object parameter)
+        public bool CanExecute(object? parameter)
         {
             if (is_busy)
                 return false;
             else
-                return canExecute == null ? true : canExecute(parameter);
+                //return canExecute == null ? true : canExecute(parameter);
+                return canExecute == null || canExecute(parameter);
         }
 
-        public void Execute(object parameter)
+        public void Execute(object? parameter)
         {
             if (!is_busy)
             {
                 is_busy = true;
-                execute?.Invoke(parameter).ContinueWith(_ =>
+                //execute?.Invoke(parameter).ContinueWith(_ =>
+                execute(parameter).ContinueWith(_ =>
                 {
                     is_busy = false;
                     CommandManager.InvalidateRequerySuggested();
-                }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.FromCurrentSynchronizationContext());
+                //}, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.FromCurrentSynchronizationContext());
+                }, TaskScheduler.FromCurrentSynchronizationContext());
             }
         }
 

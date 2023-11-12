@@ -11,8 +11,7 @@ namespace ViewModel
 {
     public interface IUIServices
     {
-        void OpenFilesDialog(object sender, RoutedEventArgs e);
-        string[]? GetFileNames();
+        string[]? OpenFilesDialog();
     }
     public class ImageViewModel
     {
@@ -20,15 +19,28 @@ namespace ViewModel
         {
             get
             {
-                Image<Rgb24> image = ImageRecognizer.Annotate(Image, Objects);
-                byte[] pixels = new byte[image.Width * image.Height * Unsafe.SizeOf<Rgb24>()];
-                image.CopyPixelDataTo(pixels);
-
-                return BitmapFrame.Create(image.Width, image.Height, 96, 96, PixelFormats.Rgb24, null, pixels, 3 * image.Width);
+                var selectedImage = SelectedImageRef.Target;
+                if (selectedImage == null)
+                {
+                    var mainImage = ImageToBitmapSource(ImageRecognizer.Annotate(Image, Objects));
+                    SelectedImageRef = new WeakReference(mainImage);
+                    return mainImage;
+                }
+                else
+                {
+                    return (BitmapSource)selectedImage;
+                }
             }
         }
+        private BitmapSource ImageToBitmapSource(Image<Rgb24> image)
+        {
+            byte[] pixels = new byte[image.Width * image.Height * Unsafe.SizeOf<Rgb24>()];
+            image.CopyPixelDataTo(pixels);
 
-        Image<Rgb24> Image { get; set; }
+            return BitmapFrame.Create(image.Width, image.Height, 96, 96, PixelFormats.Rgb24, null, pixels, 3 * image.Width);
+        }
+        Image <Rgb24> Image { get; set; }
+        private WeakReference SelectedImageRef { get; set; }
         public BitmapImage Bitmap { get; set; }
         public int ObjectCount { get; set; }
         public string FileName { get; set; }
@@ -39,6 +51,7 @@ namespace ViewModel
             Bitmap = new BitmapImage(uri);
             FileName = Path.GetFileName(path);
             ObjectCount = objectCount;
+            SelectedImageRef = new WeakReference(null);
 
             Image = image;
             Objects = objects;
@@ -51,28 +64,25 @@ namespace ViewModel
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
         public CancellationTokenSource cts { get; set; }
-
         public ImageRecognizer? imageRecognizer { get; set; }
-        public ObservableCollection<string> FileNames { get; set; }
         public ObservableCollection<Image<Rgb24>> Images { get; set; }
         public ObservableCollection<string> Paths { get; set; }
         public ICommand LoadCommand { get; private set; }
         public ICommand RunCommand { get; private set; }//start command
         public ICommand StopCommand { get; private set; }
-        public ICommand ErrorCommand { get; private set; }
 
         public ObservableCollection<ImageViewModel> imageViews { get; set; }
 
-        public string ErrorVisibility { get; set; }
-        public string ErrorMessage { get; set; }
-
         private readonly IUIServices uiServices;
 
+        private bool is_detecting = false;
         public async Task Detect(object arg)
         {
+            is_detecting = true;
+            imageViews.Clear();
+            RaisePropertyChanged(nameof(imageViews));
             try
             {
-                is_detecting = true;
                 cts = new CancellationTokenSource();
 
                 if (imageRecognizer == null)
@@ -107,20 +117,10 @@ namespace ViewModel
             }
 
         }
-        private bool is_detecting = false;
 
         public void ReportError(string errorMassage)
         {
-            ErrorMessage = errorMassage;
-            RaisePropertyChanged(nameof(ErrorMessage));
-            ErrorVisibility = "Visible";
-            RaisePropertyChanged(nameof(ErrorVisibility));
-        }
-
-        public void HideError(object arg)
-        {
-            ErrorVisibility = "Collapsed";
-            RaisePropertyChanged(nameof(ErrorVisibility));
+            MessageBox.Show(errorMassage);
         }
 
         public void Stop(object arg)
@@ -131,7 +131,7 @@ namespace ViewModel
         {
             try
             {
-                string[]? files = uiServices.GetFileNames();
+                string[]? files = uiServices.OpenFilesDialog();
                 if (files != null)
                 {
                     Paths = new ObservableCollection<string>(files);
@@ -147,13 +147,11 @@ namespace ViewModel
         }
         public ViewModelClass(IUIServices uiServices)
         {
-            ErrorVisibility = "Collapsed";
             imageViews = new();
             imageRecognizer = null;
-            LoadCommand = new RelayCommand(LoadImages, _ => !is_detecting);
-            RunCommand = new AsyncRelayCommand(Detect);
-            StopCommand = new RelayCommand(Stop, _ => is_detecting);
-            ErrorCommand = new RelayCommand(HideError);
+            LoadCommand = new RelayCommand(LoadImages, x => !is_detecting);
+            RunCommand = new AsyncRelayCommand(Detect, x => !is_detecting && (Paths != null));
+            StopCommand = new RelayCommand(Stop, x => is_detecting);
             this.uiServices = uiServices;
         }
     }
