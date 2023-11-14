@@ -94,8 +94,7 @@ namespace ViewModel
 
                 async Task<(Image<Rgb24>, List<ObjectBox>, string)> DetectAsync(Image<Rgb24> image, string path)
                 {
-                    var t = (image, await ImageRecognizer.FindAsync(path, cts));
-                    return (t.Item1, t.Item2, path);
+                    return (image, await ImageRecognizer.FindAsync(path, cts), path);
                 }
 
                 while (tasks.Count > 0)
