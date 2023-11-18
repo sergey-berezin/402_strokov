@@ -18,12 +18,15 @@ namespace ImageRecognizerNamespace
 {
     public class ImageRecognizer
     {
+        private static InferenceSession session;
         public static async Task<ImageRecognizer> Create()
         {
             Task task = SetupONNXFileAsync();
+            session = new InferenceSession("tinyyolov2-8.onnx");
             await task;
             return new ImageRecognizer();
         }
+
 
         public static string[] labels = new string[]
         {
@@ -33,7 +36,8 @@ namespace ImageRecognizerNamespace
             "pottedplant", "sheep", "sofa", "train", "tvmonitor"
         };
 
-        private static string TmpDirr;
+        //private static string TmpDirr;
+        private static string? TmpDirr;
 
         private const int CellCount = 13; // 13x13 ячеек
         private const int BoxCount = 5; // 5 прямоугольников в каждой ячейке
@@ -49,16 +53,17 @@ namespace ImageRecognizerNamespace
                 throw new Exception("File doesn't exist");
             }
 
-            return await Task.Run(() => DoAllAsync(filename, cts));
+            //return await Task.Run(() => DoAllAsync(filename, cts));
+            return await Task<List<ObjectBox>>.Factory.StartNew(() => DoAllAsync(filename, cts).Result, cts.Token, TaskCreationOptions.LongRunning, TaskScheduler.Current);
 
             async Task<List<ObjectBox>> DoAllAsync(string filename, CancellationTokenSource cts)
             {
                 ////////////////////////////////////////////////////////////////////////////////////////////
 
-                TmpDirr = filename.Substring(0,filename.LastIndexOf('\\')+1) + "tmp\\";
-                string Filename = filename.Substring(filename.LastIndexOf("\\")+1);
+                TmpDirr = Path.GetDirectoryName(filename) + "\\tmp\\";
+                string Filename = filename.Substring(filename.LastIndexOf("\\") + 1);
 
-                if(!Directory.Exists(TmpDirr))
+                if (!Directory.Exists(TmpDirr))
                 {
                     Directory.CreateDirectory(TmpDirr);
                 }
@@ -100,9 +105,11 @@ namespace ImageRecognizerNamespace
                 };
 
                 // Вычисляем предсказание нейросетью
-                using var session = new InferenceSession("tinyyolov2-8.onnx");
-                using IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results = session.Run(inputs);
-
+                IDisposableReadOnlyCollection<DisposableNamedOnnxValue> results;
+                lock (session)
+                {
+                    results = session.Run(inputs);
+                }
                 // Получаем результаты
                 var outputs = results.First().AsTensor<float>();
 
@@ -124,56 +131,58 @@ namespace ImageRecognizerNamespace
                 async Task<List<ObjectBox>> MakeObjectsAcync()
                 {
                     List<ObjectBox> objects = new();
-                    await Task.Run(() => { 
-                    for (var row = 0; row < CellCount; row++)
+                    await Task.Run(() =>
                     {
-                        if (cts.Token.IsCancellationRequested)
-                            break;
-
-                        for (var col = 0; col < CellCount; col++)
+                        for (var row = 0; row < CellCount; row++)
                         {
-                            for (var box = 0; box < BoxCount; box++)
+                            if (cts.Token.IsCancellationRequested)
+                                break;
+
+                            for (var col = 0; col < CellCount; col++)
                             {
-                                var rawX = outputs[0, (5 + ClassCount) * box, row, col];
-                                var rawY = outputs[0, (5 + ClassCount) * box + 1, row, col];
-
-                                var rawW = outputs[0, (5 + ClassCount) * box + 2, row, col];
-                                var rawH = outputs[0, (5 + ClassCount) * box + 3, row, col];
-
-                                var x = (float)((col + Sigmoid(rawX)) * cellSize);
-                                var y = (float)((row + Sigmoid(rawY)) * cellSize);
-
-                                var w = (float)(Math.Exp(rawW) * anchors[box].Item1 * cellSize);
-                                var h = (float)(Math.Exp(rawH) * anchors[box].Item2 * cellSize);
-
-                                var conf = Sigmoid(outputs[0, (5 + ClassCount) * box + 4, row, col]);
-
-                                if (conf > 0.5)
+                                for (var box = 0; box < BoxCount; box++)
                                 {
-                                    var classes = Enumerable
-                                    .Range(0, ClassCount)
-                                    .Select(i => outputs[0, (5 + ClassCount) * box + 5 + i, row, col])
-                                    .ToArray();
-                                    objects.Add(new ObjectBox(x - w / 2, y - h / 2, x + w / 2, y + h / 2, conf, IndexOfMax(Softmax(classes))));
+                                    var rawX = outputs[0, (5 + ClassCount) * box, row, col];
+                                    var rawY = outputs[0, (5 + ClassCount) * box + 1, row, col];
 
-                                }
+                                    var rawW = outputs[0, (5 + ClassCount) * box + 2, row, col];
+                                    var rawH = outputs[0, (5 + ClassCount) * box + 3, row, col];
 
-                                if (conf > 0.01)
-                                {
-                                    boundingBoxes.Mutate(ctx =>
+                                    var x = (float)((col + Sigmoid(rawX)) * cellSize);
+                                    var y = (float)((row + Sigmoid(rawY)) * cellSize);
+
+                                    var w = (float)(Math.Exp(rawW) * anchors[box].Item1 * cellSize);
+                                    var h = (float)(Math.Exp(rawH) * anchors[box].Item2 * cellSize);
+
+                                    var conf = Sigmoid(outputs[0, (5 + ClassCount) * box + 4, row, col]);
+
+                                    if (conf > 0.5)
                                     {
-                                        ctx.DrawPolygon(Pens.Solid(Color.Green, 1),
-                                            new PointF[] {
+                                        var classes = Enumerable
+                                        .Range(0, ClassCount)
+                                        .Select(i => outputs[0, (5 + ClassCount) * box + 5 + i, row, col])
+                                        .ToArray();
+                                        objects.Add(new ObjectBox(x - w / 2, y - h / 2, x + w / 2, y + h / 2, conf, IndexOfMax(Softmax(classes))));
+
+                                    }
+
+                                    if (conf > 0.01)
+                                    {
+                                        boundingBoxes.Mutate(ctx =>
+                                        {
+                                            ctx.DrawPolygon(Pens.Solid(Color.Green, 1),
+                                                new PointF[] {
                                             new PointF(x - w / 2, y - h / 2),
                                             new PointF(x + w / 2, y - h / 2),
                                             new PointF(x + w / 2, y + h / 2),
                                             new PointF(x - w / 2, y + h / 2)
-                                            });
-                                    });
+                                                });
+                                        });
+                                    }
                                 }
                             }
                         }
-                    }});
+                    });
                     return objects;
                 };
 
@@ -181,7 +190,8 @@ namespace ImageRecognizerNamespace
                     throw new Exception("Cancelation requested");
 
                 // Убираем дубликаты
-                await Task.Run(() => { 
+                await Task.Run(() =>
+                {
                     for (int i = 0; i < objects.Count; i++)
                     {
                         var o1 = objects[i];
@@ -207,7 +217,7 @@ namespace ImageRecognizerNamespace
 
                 var final = resized.Clone();
                 await AnnotateAsync(final, objects);
-                await final.SaveAsJpegAsync(TmpDirr + "final " + Filename) ;
+                await final.SaveAsJpegAsync(TmpDirr + "final " + Filename);
                 return objects;
             }
         }
