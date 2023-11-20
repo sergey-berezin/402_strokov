@@ -1,73 +1,43 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Threading;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Media.Imaging;
 using Microsoft.Win32;
-//using ImageRecognizerNamespace;
-using System.Threading;
+using ViewModel;
 
 namespace View
 {
-    /// <summary>
-    /// Логика взаимодействия для MainWindow.xaml
-    /// </summary>
-    /// 
-    struct CustomImageView
+    public partial class MainWindow : Window, IUIServices
     {
-        BitmapImage Img;
-        string Class;
-        double Confidence;
-        public CustomImageView(BitmapImage Img, string Class)
-        {
-            this.Img = Img;
-            this.Class = Class;
-            Confidence = 0;
-        }
-    }
-    public partial class MainWindow : Window
-    {
-        static CancellationTokenSource cts = new CancellationTokenSource();
+        //private readonly ICommand startCommand;
+        //public ICommand StartCommand => startCommand;
+        //string[]? FIleNames;
 
         bool m_bRunning = false;
-        List<CustomImageView> Images = new List<CustomImageView>();
         public MainWindow()
         {
             InitializeComponent();
+            DataContext = new ViewModelClass(this);
         }
-        private void CanLoadCommandHandler(object sender, CanExecuteRoutedEventArgs e)
+        public void CanLoadCommandHandler(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = !m_bRunning; 
+            e.CanExecute = !m_bRunning;
         }
 
-        private void btnOpenFiles_Click(object sender, RoutedEventArgs e)
+        public string[]? OpenFilesDialog()
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
             openFileDialog.Multiselect = true;
             openFileDialog.Filter = "image files (*.JPG)|*.jpg|All files (*.*)|*.*";
-            //openFileDialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            openFileDialog.Title = "Выберете файлы";
             if (openFileDialog.ShowDialog() == true)
             {
-                foreach (string filename in openFileDialog.FileNames)
-                {
-                    //List<ObjectBox> objects;
-                    //try
-                    //{
-                    //    objects = await ImageRecognizer.FindAsync(filename, cts);
-                    //}
-                    //catch (Exception e)
-                    //{
-                    //    Console.WriteLine(e.Message);
-                    //    return;
-                    //}
-                    //ImagesList.Items.Add(Path.GetFileName(filename));
-                    //ImagesList.Items.Add(new BitmapImage(new Uri(filename)));
-                    //ImagesListView.Items.Add(new BitmapImage(new Uri(filename)));
-                    Images.Add(new CustomImageView(new BitmapImage(new Uri(filename)), filename));
-                }
-                ImagesListView.ItemsSource = Images;
-
+                return openFileDialog.FileNames;
             }
+            return null;
+        }
+        private void ShowError()
+        {
+            MessageBox.Show("Error!");
         }
     }
 }
