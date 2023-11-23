@@ -37,6 +37,7 @@
             </MenuItem>
             <MenuItem Header="Run" Command="{Binding RunCommand}"/>
             <MenuItem Header="Stop" Command="{Binding StopCommand}"/>
+            <MenuItem Header="Clear History" Command="{Binding ClearCommand}"/>
         </Menu>
         <Grid Height="860">
             <Grid.RowDefinitions>
