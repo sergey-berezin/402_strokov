@@ -80,17 +80,27 @@ namespace ViewModel
         public async Task Detect(object arg)
         {
             is_detecting = true;
-            imageViews.Clear();
             RaisePropertyChanged(nameof(imageViews));
             try
             {
+                //imageViews.Clear();
                 cts = new CancellationTokenSource();
 
                 if (imageRecognizer == null)
                     imageRecognizer = await ImageRecognizer.Create();
                 List<Task<(Image<Rgb24>, List<ObjectBox>, string)>> tasks = new();
 
-                foreach (var p in Images.Zip(Paths))
+                //проверка на то были ли файл уже обработан ранее
+                ObservableCollection<string> UncheckedPaths = Paths;
+
+                var StoredData = Storage.GetImagePresentations();
+
+                for (int i = 0; i < StoredData.Count(); i++)
+                {
+                    UncheckedPaths.Remove(StoredData[i].Filename);
+                }
+
+                foreach (var p in Images.Zip(UncheckedPaths))
                     tasks.Add(DetectAsync(p.First, p.Second));
 
                 async Task<(Image<Rgb24>, List<ObjectBox>, string)> DetectAsync(Image<Rgb24> image, string path)

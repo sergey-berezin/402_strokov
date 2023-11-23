@@ -101,9 +101,9 @@ namespace ViewModel
                 Images.Add(image);
         }
 
-        public IEnumerable<ImageSerealization> GetImagePresentations()
+        public List<ImageSerealization> GetImagePresentations()
         {
-            return Images.Select(x => x);
+            return Images;
         }
     }
 }
