@@ -115,7 +115,7 @@ namespace ViewModel
                     var result = task.Result;
                     tasks.Remove(task);
                     imageViews.Add(new ImageViewModel(result.Item1, result.Item2.Count, result.Item3, result.Item2));
-                    Storage.AddElement(new ImageSerealization(result));
+                    Storage.AddElement(new ImageSerialization(result));
                     RaisePropertyChanged(nameof(imageViews));
                 }
                 if (Storage.Count > previousLength)
@@ -177,9 +177,8 @@ namespace ViewModel
             {
                 //такой кривой способ добавить картинки в список
                 imageViews.Add(new ImageViewModel(Image.Load<Rgb24>(imageSerialization.Filename), imageSerialization.ObjectBoxes.Count,imageSerialization.Filename,imageSerialization.ObjectBoxes));
-                RaisePropertyChanged(nameof(imageViews));
             }
-
+            RaisePropertyChanged(nameof(imageViews));
 
             LoadCommand = new RelayCommand(LoadImages, x => !is_detecting);
             RunCommand = new AsyncRelayCommand(Detect, x => !is_detecting && (Paths != null));

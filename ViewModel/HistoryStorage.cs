@@ -9,7 +9,7 @@ using Newtonsoft.Json;
 
 namespace ViewModel
 {
-    public class ImageSerealization
+    public class ImageSerialization: IEquatable<ImageSerialization>
     {
         public string Pixels { get; set; }
         public int Height { get; set; }
@@ -17,7 +17,7 @@ namespace ViewModel
         public List<ObjectBox> ObjectBoxes { get; set; }
         public string Filename { get; set; }
 
-        public ImageSerealization((Image<Rgb24> image, List<ObjectBox> objects, string filename) result)
+        public ImageSerialization((Image<Rgb24> image, List<ObjectBox> objects, string filename) result)
         {
             Filename = result.filename;
             if (result.objects == null || result.objects.Count() == 0)
@@ -42,12 +42,15 @@ namespace ViewModel
                 ObjectBoxes = result.objects;
             }
         }
-
+        public bool Equals(ImageSerialization other)
+        {
+            return Filename == other.Filename;
+        }
     }
     public class HistoryStorage
     {
         private string Path { get; set; }
-        private List<ImageSerealization> Images;
+        private List<ImageSerialization> Images;
 
         public int Count
         {
@@ -57,7 +60,7 @@ namespace ViewModel
         public HistoryStorage(string path = "History.json")
         {
             Path = path;
-            Images = new List<ImageSerealization>();
+            Images = new List<ImageSerialization>();
         }
 
         public void Erase()
@@ -71,11 +74,11 @@ namespace ViewModel
         {
             if (!File.Exists(Path))
                 return;
-            var images = JsonConvert.DeserializeObject<List<ImageSerealization>>(File.ReadAllText(Path));
+            var images = JsonConvert.DeserializeObject<List<ImageSerialization>>(File.ReadAllText(Path));
             if (images != null)
                 Images = images;
             else
-                Images = new List<ImageSerealization>();
+                Images = new List<ImageSerialization>();
         }
 
         public void Save()
@@ -95,13 +98,13 @@ namespace ViewModel
             }
         }
 
-        public void AddElement(ImageSerealization image)
+        public void AddElement(ImageSerialization image)
         {
             if(!Images.Contains(image))
                 Images.Add(image);
         }
 
-        public List<ImageSerealization> GetImagePresentations()
+        public List<ImageSerialization> GetImagePresentations()
         {
             return Images;
         }
