@@ -140,3 +140,5 @@ _NCrunch*
 /ConsolePart/images/tmp
 /ConsolePart/images/results.csv
 /ConsolePart/images/final.jpg
+*.onnx
+/WebApplication3/tmp
