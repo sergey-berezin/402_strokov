@@ -1,0 +1,191 @@
+﻿
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Image recognition</title>
+    <link rel="stylesheet" href="resources.css">
+</head>
+<body>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    <center>
+        <input type="file" id="imageInput" />
+        <button onclick="OnFileSelected()">Начать обработку</button>
+
+        <div id="container" hidden="hidden">
+            <center>
+                <img style="font-family:Arial" id="image" alt="Image" width="500" height="500">
+            </center>
+            <center>
+                <canvas id="myCanvas"></canvas>
+            </center>
+        </div>
+
+        <table class="DetectedData" id="table" hidden="hidden">
+            <thead>
+                <tr>
+                    <th> Number </th>
+                    <th> Label </th>
+                    <th> Confidence </th>
+                    <th> Xmin </th>
+                    <th> Ymin </th>
+                    <th> Xmax </th>
+                    <th> Ymax </th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+
+        <h2 id="no_obj">Обнаруженные объекты:</h2>
+
+        <h2 id="Error" style="color:crimson" hidden="hidden">Error</h2>
+    </center>
+
+    <script type="text/javascript">
+        const canvas = document.getElementById("myCanvas");
+        const ctx = canvas.getContext("2d");
+        const container = document.getElementById('container');
+        const table = document.getElementById('table');
+        const TARGETSIZE = 416;
+        let selectedTr;
+
+        function OnFileSelected() {
+            var uploadFile = document.getElementById("imageInput");
+            const filename = uploadFile.files[0];
+            const reader = new FileReader();
+            const imageObj = document.getElementById('image');
+
+            reader.addEventListener('load', () => {
+                container.removeAttribute('hidden');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                imageObj.src = reader.result;
+
+                imageObj.width = TARGETSIZE;
+                imageObj.height = TARGETSIZE;
+
+                var img = getBase64Image(reader.result);
+
+                document.getElementById('Error').setAttribute('hidden', 'hidden');
+                if (selectedTr) {
+                    selectedTr.classList.remove('highlight');
+                }
+                $("#table tr").remove();
+
+                table.setAttribute('hidden', 'hidden');
+
+                table.onclick = function (event) {
+                    let target = event.target;
+
+                    if (target.tagName == 'TD')
+                        Highlight(target.parentNode);
+
+                    if (target.tagName != 'TR') return;
+
+                };
+
+                ImageProcessing(img);
+            });
+
+            reader.readAsDataURL(filename);
+        }
+
+        function getBase64Image(img) {
+            img = img.replace('data:', '').replace(/^.+,/, '');
+            var image = new Image();
+            image.src = img;
+            var canvas = document.createElement("canvas");
+            canvas.width = image.width;
+            canvas.height = image.height;
+            var ctx = canvas.getContext("2d");;
+            image.onload = function () {
+                ctx.drawImage(image, 0, 0);
+            }
+            return img;
+        }
+
+        async function ImageProcessing(img) {
+            try {
+                response = await fetch("http://localhost:5278/My", {//5278, 7271
+                    method: "POST",
+                    headers:
+                    {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(img),
+                })
+
+                if (!response.ok) {
+                    throw new Error(`Request failed with status: ${response.status}`);
+                }
+
+                let json = await response.json();
+                let i, Label, Conf, Xmin, Ymin, Xmax, Ymax;
+                if (json.length > 0) {
+                    $("#no_obj").css("display", "none");
+                    table.removeAttribute('hidden');
+                }
+                else {
+                    $("#no_obj").css("display", "block");
+                    table.setAttribute('hidden', 'hidden');
+                }
+
+                for (i = 0; i < json.length; ++i) {
+                    Label = json[i].label;
+                    Conf = json[i].conf;
+                    Xmin = json[i].xmin;
+                    Ymin = json[i].ymin;
+                    Xmax = json[i].xmax;
+                    Ymax = json[i].ymax;
+                    var row = '<tr><td>' + (i + 1) + '</td><td>' + Label + '</td><td>' + Conf.toPrecision(3)
+                        + '</td><td>' + Xmin.toPrecision(3) + '</td><td>' + Ymin.toPrecision(3)
+                        + '</td><td>' + Xmax.toPrecision(3) + '</td><td>' + Ymax.toPrecision(3) + '</td>';
+                    $("#table > tbody").append(row);
+                }
+                canvas.width = container.offsetWidth;
+                canvas.height = container.offsetHeight;
+                DrawAll();
+            }
+            catch (err) {
+                document.getElementById('Error').textContent = err;
+                document.getElementById('Error').removeAttribute('hidden');
+            }
+        }
+
+        function DrawAll() {
+            for (i = 0; i < table.rows.length; ++i) {
+                tr = $("#table tr")[i];
+                let Xmin = tr.cells[3].innerHTML;
+                let Ymin = tr.cells[4].innerHTML;
+                let Xmax = tr.cells[5].innerHTML;
+                let Ymax = tr.cells[6].innerHTML;
+
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = "#0060FF";
+                ctx.strokeRect(Xmin, Ymin, Xmax - Xmin, Ymax - Ymin);
+            }
+        }
+
+        function Highlight(tr) {
+            if (selectedTr) {
+                selectedTr.classList.remove('highlight');
+            }
+            selectedTr = tr;
+            selectedTr.classList.add('highlight');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            canvas.width = container.offsetWidth;
+            canvas.height = container.offsetHeight;
+            DrawAll();
+
+            let Xmin = tr.cells[3].innerHTML;
+            let Ymin = tr.cells[4].innerHTML;
+            let Xmax = tr.cells[5].innerHTML;
+            let Ymax = tr.cells[6].innerHTML;
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = "#0080FF";
+            ctx.strokeRect(Xmin, Ymin, Xmax - Xmin, Ymax - Ymin);
+        }
+    </script>
+</body>
+</html>

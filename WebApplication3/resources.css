@@ -1,0 +1,20 @@
+﻿body {
+}
+* {
+    margin: 5px;
+}
+
+th, td {
+    padding: 15px 15px;
+    text-align: center;
+}
+
+#container {
+    position: relative;
+}
+
+#myCanvas {
+    position: absolute;
+    top: 0;
+    left: 720px;
+}
